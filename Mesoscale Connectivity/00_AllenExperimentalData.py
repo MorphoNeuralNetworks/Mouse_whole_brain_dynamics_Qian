@@ -1,40 +1,39 @@
-#### Use allen's mesoscale experimental data to obtain connections between specified regions
 import numpy as np
-import csv,json
+import csv,json,nrrd,os
 
-## CCFv3 structure
-with open('./Data/tree.json','r',encoding='utf_8_sig')as fp:
+## 统计每个区域内的大小
+data_path=r'../Data/annotation_25.nrrd'
+CCFv3_model,options=nrrd.read(data_path)  # 读入 nrrd 文件
+pixel_num=[0]*(np.max(CCFv3_model)+1)
+for i in range(0,np.shape(CCFv3_model)[0]):
+    if i%10==0:
+        print(i)
+    for j in range(0,np.shape(CCFv3_model)[1]):
+        # if j%100==0:
+        #     print(j)
+        for k in range(0,np.shape(CCFv3_model)[2]):
+            if CCFv3_model[i,j,k]!=0:
+                pixel_num[CCFv3_model[i,j,k]]+=1
+pixel_dict=dict()
+for i in range(0,len(pixel_num)):
+    if pixel_num[i]!=0:
+        pixel_dict[i]=pixel_num[i]
+np.save("pixel_num_dict.npy",pixel_dict)
+
+## 构建CCFv3结构
+with open('../Data/tree.json','r',encoding='utf_8_sig')as fp:
     json_data = json.load(fp)
     fp.close()
 Celltype2Id={x['acronym']:x['id'] for x in json_data}
 Fullname2Type={x['name']:x['acronym'] for x in json_data}
 Id2Celltype={Celltype2Id[key]:key for key in Celltype2Id.keys()}
 
-## Set regions interested
-with open('./Data/TVMB_Regions.csv', newline='') as csvfile:
+## 设定关注的脑区 neuron>5/10/20的三种情况
+with open('../Data/SEU_Regions_10.csv', newline='') as csvfile:
     temp = list(csv.reader(csvfile, delimiter=' '))
-    TVMB_Region=np.array(temp)
-TVMB_Re=[]
-for x in TVMB_Region:
-    if x[0].replace("_"," ") not in Fullname2Type.keys():
-        print(x[0])
-    else:
-        TVMB_Re.append(Fullname2Type[x[0].replace("_"," ")])
+    TVMB_Re=[str(x[0]) for x in temp]
 
-## From a divided region to a larger region
-# select_region=[]
-# Celltype2Select=dict()
-# for x in json_data:
-#     mark=0
-#     for k in select_region:
-#         if Celltype2Id[k] in x['structure_id_path']:
-#             Celltype2Select[x['acronym']]=k
-#             mark=1
-#             break
-#     if mark==0:
-#         Celltype2Select[x['acronym']]=x['acronym']
-
-def Delete3std(x): ## delete value out of 2*std
+def Delete3std(x): #删除2std以外的数据
     mean=np.mean(x)
     std=np.std(x)
     temp=[]
@@ -43,8 +42,7 @@ def Delete3std(x): ## delete value out of 2*std
             temp.append(t)
     return np.mean(temp)
 
-## Get all Allen experimental data
-with open('./Data/mouse_projection_data_sets.csv', newline='') as csvfile:
+with open('../Data/mouse_projection_data_sets.csv', newline='') as csvfile:
     temp = list(csv.reader(csvfile, delimiter=','))
     del temp[0]
     dataset=np.array(temp)
@@ -54,36 +52,33 @@ injection_density=dict()
 for i in range(0,len(TVMB_Re)):
     print(i)
     check=[]
-    i_r=TVMB_Re[i] # set regions
+    i_r=TVMB_Re[i] #设置筛选区域
     i_r_id=Celltype2Id[i_r]
 
     exp_list=[]
-    if i_r=="CENT" or i_r=="CUL" or i_r=="AN": # some special regions without experiments
-        for x in dataset:
-            if i_r in x[2]: # Contain subregions
-                exp_list.append(str(x[0])) 
-    else:
-        for x in dataset:
-            # if x[2]==i_r: # fouce on primary injection structure
-            #     exp_list.append(str(x[0]))  
-            tt=x[4][1:-1].split(',')
-            if i_r in tt: # fouce on secondary injection structure
-                exp_list.append(str(x[0]))  
+    mark=0
+    for x in dataset:
+        # if x[2]==i_r: # 只看一级结构匹配度
+        #     exp_list.append(str(x[0]))  
+        tt=x[4][1:-1].split(',')
+        if i_r in tt: # 看二级结构匹配度
+            exp_list.append(str(x[0]))  
+            mark=1
+    if mark==0:
+        print(TVMB_Re[i])
 
-    i_r=TVMB_Re[i] # set region 
+    i_r=TVMB_Re[i] #设置筛选区域
     exp_r=[]
     for exp in exp_list:
-        with open('./Data/meso_projection/experiment_'+exp+'.csv', newline='') as csvfile:
+        with open('../Data/meso_projection/experiment_'+exp+'.csv', newline='') as csvfile: #这是Allen的2062个注射实验
             temp = list(csv.reader(csvfile, delimiter=','))
         del temp[0]
-        # Right hemisphere; Injection voxels > 50; Projection volume > 2
+        # 只看右半球 只看注射面积大于50
         mark=0
         for tt in temp:
             if int(tt[2])==i_r_id and tt[4]=='t' and tt[3]=='2':
                 check.append([tt[6],tt[13]])
                 if float(tt[6])<200 or float(tt[13])<0.03125:
-                # if float(tt[6])<0 or float(tt[13])<0:
-                    # print(exp)
                     break
                 else:
                     injection_density[tt[1]]=float(tt[6])/float(tt[5])
@@ -98,18 +93,18 @@ for i in range(0,len(TVMB_Re)):
  
     exp_r=np.array(exp_r)
 
-    # find all suitable experiments
+    # 找到目标区域符合的实验
     for j in range(0,len(TVMB_Re)):
-        p_r=TVMB_Re[j]
+        p_r=TVMB_Re[j] #设置筛选区域
         p_r_id=Celltype2Id[p_r]
         exp_t_l=[]
         exp_t_r=[]
-        # get connectivity
         for x in exp_r:
             if int(x[2])==p_r_id:
                 if x[3]=='1':
                     exp_t_l.append(float(x[6])/float(x[5])/injection_density[x[1]])
                 if x[3]=='2':
+                    # exp_t.append(float(x[14]))
                     exp_t_r.append(float(x[6])/float(x[5])/injection_density[x[1]])
        
         if len(exp_t_r)!=0:
@@ -117,8 +112,11 @@ for i in range(0,len(TVMB_Re)):
         if len(exp_t_l)!=0:
             all_exp[i,j+len(TVMB_Re)]=Delete3std(exp_t_l)
 
-# mirror
+# transpose because TVB convention requires SC[target, source]!
+all_exp[0:len(TVMB_Re),0:len(TVMB_Re)]=all_exp[0:len(TVMB_Re),0:len(TVMB_Re)].T
+all_exp[0:len(TVMB_Re),len(TVMB_Re):]=all_exp[0:len(TVMB_Re),len(TVMB_Re):].T
+# 镜像对称
 all_exp[len(TVMB_Re):,len(TVMB_Re):]=all_exp[0:len(TVMB_Re),0:len(TVMB_Re)]
 all_exp[len(TVMB_Re):,0:len(TVMB_Re)]=all_exp[0:len(TVMB_Re),len(TVMB_Re):]
 
-np.save("TVMB_connectivity_Allen.npy",all_exp)    
+np.save("./Allen_connectivity.npy",all_exp)    
