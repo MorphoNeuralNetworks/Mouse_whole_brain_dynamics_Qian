@@ -8,7 +8,7 @@ We simulated the whole mouse brain's resting state using an extensive dataset of
 Specifically we will include the following goals:  
 1. Develop an algorithm to generate mesoscale connectivity based on single-cell morphology data and bouton locations. And compare to Allen mesoscale connectivity.
 
-2. Analyze the simulation difference between the networks constructed using s-type or c-type.
+2. Realize the resting state simulation based on Reduced Wong-Wang model and find the optimal parameter.
 
 3. Compare the differences in simulation under different perturbation on neuron morphology.
 
