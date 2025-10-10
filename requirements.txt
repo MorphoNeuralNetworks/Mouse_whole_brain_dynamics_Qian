@@ -2,3 +2,4 @@ numpy
 pynrrd
 scipy
 seaborn
+requests

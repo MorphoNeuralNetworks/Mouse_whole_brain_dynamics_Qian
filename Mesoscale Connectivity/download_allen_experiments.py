@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 
 # Input and output paths
-input_csv = "/mnt/data/mouse_projection_data_sets.csv"
+input_csv = "../Data/mouse_projection_data_sets.csv"
 output_dir = "../Data/meso_projection"
 os.makedirs(output_dir, exist_ok=True)
 
@@ -11,12 +11,12 @@ os.makedirs(output_dir, exist_ok=True)
 df = pd.read_csv(input_csv)
 if "data_set_id" not in df.columns:
     raise ValueError("CSV must contain a column named 'data_set_id'")
+if "projection_structure_unionizes_file_url" not in df.columns:
+    raise ValueError("CSV must contain a column named 'projection_structure_unionizes_file_url'")
 
-# Base URL template (Allen Brain Atlas projection_structure)
-url_template = "http://connectivity.brain-map.org/projection/experiment/{exp_id}.csv"
-
-for exp_id in df["data_set_id"].dropna().astype(int).unique():
-    url = url_template.format(exp_id=exp_id)
+for _, row in df.iterrows():
+    exp_id = int(row["data_set_id"])
+    url = row["projection_structure_unionizes_file_url"]
     output_file = os.path.join(output_dir, f"experiment_{exp_id}.csv")
 
     try:
