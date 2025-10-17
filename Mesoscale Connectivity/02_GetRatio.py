@@ -31,7 +31,7 @@ for x in json_data:
 names=[""]
 for name in names:
     # 得到所有区域内bouton的数量
-    bouton_region_dict=np.load("../"+name+"bouton_region_dict.npy",allow_pickle=True).item()
+    bouton_region_dict=np.load("./"+name+"bouton_region_dict.npy",allow_pickle=True).item()
     bouton_region_select=dict()
     for key in bouton_region_dict.keys():
         temp=bouton_region_dict[key]

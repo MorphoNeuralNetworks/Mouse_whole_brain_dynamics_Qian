@@ -7,18 +7,20 @@ from matplotlib import pyplot as plt
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
 
-with open('./Data/SEU_Regions_10.csv', newline='') as csvfile:
+with open('../Data/SEU_Regions_10.csv', newline='') as csvfile:
     temp = list(csv.reader(csvfile, delimiter=' '))
     TVMB_Re=[str(x[0]) for x in temp]
 
-allen_exp=np.load("./Connectivity/Allen_connectivity_10.npy",allow_pickle=True)
+#allen_exp=np.load("./Connectivity/Allen_connectivity_10.npy",allow_pickle=True)
+allen_exp=np.load("../Mesoscale Connectivity/Allen_connectivity.npy",allow_pickle=True)
 allen_exp=allen_exp[0:len(TVMB_Re),:]
 for i in range(0,len(TVMB_Re)): allen_exp[i,i]=0 
 # allen_exp=np.log10(allen_exp+1)
 # allen_exp[np.where(allen_exp<1e-5)]=0
 allen_exp=allen_exp/np.amax(allen_exp)
 
-connection=np.load("./Connectivity/SingleCell_connectivity_10.npy",allow_pickle=True)
+#connection=np.load("./Connectivity/SingleCell_connectivity_10.npy",allow_pickle=True)
+connection=np.load("./Mesoscale Connectivity/SingleCell_connectivity.npy",allow_pickle=True)
 connection=connection[0:len(TVMB_Re),:]
 for i in range(0,len(TVMB_Re)): connection[i,i]=0 
 # connection=np.log10(connection+1)

@@ -37,6 +37,8 @@ def filecalculation(par):
         x=x.strip("\n")
         t1=x.split( )
         t1=list(map(float,t1))
+        if t not in soma_info:
+            continue
         if t1[0]==0:
             continue
         if t1[0]==t1[-1]: #修正版本的数据会出现自己导向自己的情况，得处理这个问题
@@ -63,7 +65,7 @@ def filecalculation(par):
 def run_pool():  # main process
     
     from multiprocessing import Pool
-    cpu_worker_num = 36
+    cpu_worker_num = 8
     
     import time
     time_start = time.time()  # 记录开始时间

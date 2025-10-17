@@ -17,7 +17,7 @@ def func(par):
     bash_file.write(f"#SBATCH --output=/Simulation/out/{file_end}.out\n")
     pp="""
 # init environment
-cd /TVB_Distribution/tvb_data
+cd ./tvb_data
 export PATH=`pwd`/bin:$PATH
 export PYTHONPATH=`pwd`/lib/python3.10:`pwd`/lib/python3.10/site-packages
 
